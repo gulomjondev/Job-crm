@@ -17,7 +17,7 @@ from .serializers import (
     TeacherSerializer, LessonSerializer, AttendanceSerializer, PaymentSerializer,
     AssignmentSerializer, AssignmentSubmissionSerializer, ExamSerializer,
     ExamResultSerializer, RoomSerializer, PayrollSerializer, NotificationSerializer,
-    ContractSerializer, LeadSerializer, LoginSerializer
+    ContractSerializer, LeadSerializer, LoginSerializer, DirectorCreateSerializer
 )
 
 
@@ -80,7 +80,7 @@ class DirectorViewSet(viewsets.ModelViewSet):
     - DELETE /api/directors/{id}/ - Delete director
     """
     queryset = UserProfile.objects.filter(role='Director')
-    serializer_class = UserProfileSerializer
+    serializer_class = DirectorCreateSerializer
     # PRODUCTION: Uncomment line below and comment AllowAny line
     # permission_classes = [permissions.IsAuthenticated]
     permission_classes = [permissions.AllowAny]

@@ -100,6 +100,37 @@ class Subject(models.Model):
         unique_together = ('educational_center', 'name')
 
 
+class Teacher(models.Model):
+    """Teacher model with performance metrics"""
+    STATUS_CHOICES = [
+        ('Active', 'Active'),
+        ('Inactive', 'Inactive'),
+        ('Blocked', 'Blocked'),
+    ]
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='teacher')
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='teachers')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Active')
+    phone = models.CharField(max_length=20, blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
+    specialization = models.CharField(max_length=255, blank=True)
+    qualification = models.TextField(blank=True)
+    performance_rating = models.FloatField(default=0.0, validators=[MinValueValidator(0), MaxValueValidator(5)])
+    hire_date = models.DateField(auto_now_add=True)
+    hourly_rate = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    address = models.TextField(blank=True)
+    passport_number = models.CharField(max_length=20, blank=True, unique=True)
+    image = models.ImageField(upload_to='teachers/', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.specialization}"
+
+    class Meta:
+        ordering = ['-created_at']
+
+
 class Group(models.Model):
     """Study groups"""
     STATUS_CHOICES = [
@@ -111,8 +142,14 @@ class Group(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='groups')
     name = models.CharField(max_length=255)
     subject = models.ForeignKey(Subject, on_delete=models.SET_NULL, null=True, related_name='groups')
-    teacher = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True,
-                               related_name='teaching_groups', limit_choices_to={'role': 'Teacher'})
+    teacher = models.ForeignKey(
+        Teacher,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='teaching_groups'
+    )
+
     capacity = models.IntegerField(default=30)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Active')
     start_date = models.DateField()
@@ -159,35 +196,6 @@ class Student(models.Model):
         ordering = ['-created_at']
 
 
-class Teacher(models.Model):
-    """Teacher model with performance metrics"""
-    STATUS_CHOICES = [
-        ('Active', 'Active'),
-        ('Inactive', 'Inactive'),
-        ('Blocked', 'Blocked'),
-    ]
-    
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='teacher')
-    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='teachers')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Active')
-    phone = models.CharField(max_length=20, blank=True)
-    date_of_birth = models.DateField(null=True, blank=True)
-    specialization = models.CharField(max_length=255, blank=True)
-    qualification = models.TextField(blank=True)
-    performance_rating = models.FloatField(default=0.0, validators=[MinValueValidator(0), MaxValueValidator(5)])
-    hire_date = models.DateField(auto_now_add=True)
-    hourly_rate = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    address = models.TextField(blank=True)
-    passport_number = models.CharField(max_length=20, blank=True, unique=True)
-    image = models.ImageField(upload_to='teachers/', null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    def __str__(self):
-        return f"{self.user.get_full_name()} - {self.specialization}"
-    
-    class Meta:
-        ordering = ['-created_at']
 
 
 class Lesson(models.Model):

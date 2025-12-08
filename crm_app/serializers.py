@@ -30,6 +30,34 @@ class UserProfileSerializer(serializers.ModelSerializer):
                  'passport_number', 'birthday', 'image', 'is_blocked', 'created_at')
         read_only_fields = ('created_at',)
 
+class DirectorCreateSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = UserProfile
+        fields = ['id', 'username', 'password', 'phone']
+
+    def create(self, validated_data):
+        username = validated_data.pop("username")
+        password = validated_data.pop("password")
+
+        # if User.objects.filter(username=username).exists():
+        #     raise serializers.ValidationError({"username": "This username is already taken"})
+        # 1. Yangi User yaratish
+        user = User.objects.create_user(
+            username=username,
+            password=password
+        )
+
+        # 2. UserProfile — Director
+        director = UserProfile.objects.create(
+            user=user,
+            role="Director",
+            **validated_data
+        )
+
+        return director
 
 class DirectorListSerializer(serializers.ModelSerializer):
     """Serializer for listing available directors for center assignment"""
