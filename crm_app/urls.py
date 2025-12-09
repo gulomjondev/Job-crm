@@ -5,7 +5,7 @@ from .views import (
     BranchViewSet, SubjectViewSet, GroupViewSet, StudentViewSet, TeacherViewSet,
     LessonViewSet, AttendanceViewSet, PaymentViewSet, AssignmentViewSet,
     AssignmentSubmissionViewSet, ExamViewSet, ExamResultViewSet, RoomViewSet,
-    PayrollViewSet, NotificationViewSet, ContractViewSet, LeadViewSet
+    PayrollViewSet, NotificationViewSet, ContractViewSet, LeadViewSet, UserViewSet
 )
 
 router = DefaultRouter()
@@ -16,7 +16,7 @@ router.register(r'directors', DirectorViewSet, basename='director')
 
 # Authentication
 router.register(r'auth', LoginViewSet, basename='auth')
-
+router.register('users', UserViewSet, basename='users')
 # Director/Manager Endpoints
 router.register(r'branches', BranchViewSet, basename='branch')
 router.register(r'subjects', SubjectViewSet, basename='subject')
@@ -39,7 +39,7 @@ router.register(r'payments', PaymentViewSet, basename='payment')
 router.register(r'payroll', PayrollViewSet, basename='payroll')
 
 # Operations
-router.register(r'rooms', RoomViewSet, basename='room')
+router.register(r'roo   ms', RoomViewSet, basename='room')
 router.register(r'contracts', ContractViewSet, basename='contract')
 router.register(r'leads', LeadViewSet, basename='lead')
 

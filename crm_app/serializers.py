@@ -42,15 +42,14 @@ class DirectorCreateSerializer(serializers.ModelSerializer):
         username = validated_data.pop("username")
         password = validated_data.pop("password")
 
-        # if User.objects.filter(username=username).exists():
-        #     raise serializers.ValidationError({"username": "This username is already taken"})
-        # 1. Yangi User yaratish
+        if User.objects.filter(username=username).exists():
+            raise serializers.ValidationError({"username": "This username is already taken"})
+
         user = User.objects.create_user(
             username=username,
             password=password
         )
 
-        # 2. UserProfile — Director
         director = UserProfile.objects.create(
             user=user,
             role="Director",
@@ -58,6 +57,7 @@ class DirectorCreateSerializer(serializers.ModelSerializer):
         )
 
         return director
+
 
 class DirectorListSerializer(serializers.ModelSerializer):
     """Serializer for listing available directors for center assignment"""
@@ -174,28 +174,33 @@ class TeacherSerializer(serializers.ModelSerializer):
 
 
 class LessonSerializer(serializers.ModelSerializer):
-    """Lesson serializer"""
     group_name = serializers.CharField(source='group.name', read_only=True)
     teacher_name = serializers.CharField(source='teacher.user.get_full_name', read_only=True)
     room_name = serializers.CharField(source='room.name', read_only=True)
-    
+
+    teacher = serializers.PrimaryKeyRelatedField(queryset=Teacher.objects.all())
+
     class Meta:
         model = Lesson
-        fields = ('id', 'group', 'group_name', 'teacher', 'teacher_name', 'room', 'room_name',
-                 'date', 'start_time', 'end_time', 'duration', 'online_link', 'is_cancelled',
-                 'created_at', 'updated_at')
-        read_only_fields = ('created_at', 'updated_at')
+        fields = (
+            'id', 'group', 'group_name',
+            'teacher', 'teacher_name',
+            'room', 'room_name',
+            'date', 'start_time', 'end_time',
+            'duration', 'online_link', 'is_cancelled',
+            'created_at', 'updated_at'
+        )
 
 
 class AttendanceSerializer(serializers.ModelSerializer):
     """Attendance serializer"""
     student_name = serializers.CharField(source='student.user.get_full_name', read_only=True)
-    lesson_info = serializers.CharField(source='lesson', read_only=True)
+    lesson_group = serializers.CharField(source='lesson', read_only=True)
     teacher_name = serializers.CharField(source='marked_by.user.get_full_name', read_only=True)
     
     class Meta:
         model = Attendance
-        fields = ('id', 'lesson', 'lesson_info', 'student', 'student_name', 'status',
+        fields = ('id', 'lesson', 'lesson_group', 'student', 'student_name', 'status',
                  'marked_by', 'teacher_name', 'notes', 'marked_at')
         read_only_fields = ('marked_at',)
 
@@ -261,15 +266,43 @@ class ExamSerializer(serializers.ModelSerializer):
 
 
 class ExamResultSerializer(serializers.ModelSerializer):
-    """Exam result serializer"""
     student_name = serializers.CharField(source='student.user.get_full_name', read_only=True)
     exam_title = serializers.CharField(source='exam.title', read_only=True)
-    
+
     class Meta:
         model = ExamResult
-        fields = ('id', 'exam', 'exam_title', 'student', 'student_name', 'score',
-                 'grade', 'answer_file', 'submitted_at')
+        fields = (
+            'id', 'exam', 'exam_title', 'student', 'student_name',
+            'score', 'grade', 'answer_file', 'submitted_at'
+        )
         read_only_fields = ('submitted_at',)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        request = self.context.get("request")
+        if not request:
+            return
+
+        exam_id = request.data.get("exam") or request.query_params.get("exam")
+        if not exam_id:
+            # Exam tanlanmagan bo‘lsa — barcha studentlar ko‘rinadi
+            self.fields['student'].queryset = Student.objects.all()
+            return
+
+        # Exam borligini tekshiramiz
+        try:
+            exam = Exam.objects.get(id=exam_id)
+        except Exam.DoesNotExist:
+            self.fields['student'].queryset = Student.objects.all()
+            return
+
+        # Exam ga tegishli guruh bo‘yicha studentlarni filterlaymiz
+        self.fields['student'].queryset = Student.objects.filter(
+            group=exam.group
+        )
+
+
 
 
 class RoomSerializer(serializers.ModelSerializer):

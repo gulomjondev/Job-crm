@@ -1,1 +1,1 @@
-web: gunicorn 'job-crm.wsgi'
+web: gunicorn 'crm_project.wsgi'

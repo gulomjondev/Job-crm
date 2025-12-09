@@ -1,5 +1,6 @@
-from rest_framework import viewsets, status, permissions
+from rest_framework import viewsets, status, permissions, request
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
@@ -20,6 +21,9 @@ from .serializers import (
     ContractSerializer, LeadSerializer, LoginSerializer, DirectorCreateSerializer
 )
 
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
 # SUPERADMIN VIEWS
 class EducationalCenterViewSet(viewsets.ModelViewSet):
@@ -66,36 +70,20 @@ class EducationalCenterViewSet(viewsets.ModelViewSet):
 
 
 class DirectorViewSet(viewsets.ModelViewSet):
-    """
-    SuperAdmin API for creating and managing directors.
-
-    Authentication: IsAuthenticated
-    Permission: Only SuperAdmin role allowed
-
-    ENDPOINTS:
-    - GET /api/directors/ - List all directors
-    - POST /api/directors/ - Create new director
-    - GET /api/directors/{id}/ - Retrieve director
-    - PUT /api/directors/{id}/ - Update director
-    - DELETE /api/directors/{id}/ - Delete director
-    """
     queryset = UserProfile.objects.filter(role='Director')
     serializer_class = DirectorCreateSerializer
-    # PRODUCTION: Uncomment line below and comment AllowAny line
-    # permission_classes = [permissions.IsAuthenticated]
     permission_classes = [permissions.AllowAny]
 
-    def perform_create(self, serializer):
-        """Create director with user account"""
-        user_data = self.request.data
-        user = User.objects.create_user(
-            username=user_data.get('username'),
-            password=user_data.get('password'),
-            first_name=user_data.get('first_name', ''),
-            last_name=user_data.get('last_name', ''),
-            email=user_data.get('email', '')
-        )
-        serializer.save(user=user, role='Director')
+
+
+
+# class DirectorViewSet(viewsets.ModelViewSet):
+#     queryset = UserProfile.objects.filter(role='Director')
+#     serializer_class = DirectorCreateSerializer
+#     permission_classes = [permissions.AllowAny]
+#
+#     def perform_create(self, serializer):
+#         serializer.save(role='Director')
 
 
 class LoginViewSet(viewsets.ViewSet):

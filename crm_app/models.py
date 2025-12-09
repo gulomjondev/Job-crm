@@ -48,7 +48,7 @@ class UserProfile(models.Model):
     educational_center = models.ForeignKey(EducationalCenter, on_delete=models.CASCADE, 
                                           related_name='users', null=True, blank=True)
     phone = models.CharField(max_length=20, blank=True)
-    passport_number = models.CharField(max_length=20, blank=True, unique=True)
+    passport_number = models.CharField(max_length=20, blank=True, null=True)
     birthday = models.DateField(null=True, blank=True)
     image = models.ImageField(upload_to='profiles/', null=True, blank=True)
     is_blocked = models.BooleanField(default=False)
@@ -162,7 +162,7 @@ class Group(models.Model):
     
     class Meta:
         ordering = ['-created_at']
-        unique_together = ('branch', 'name')
+        # unique_together = ('branch', 'name')
 
 
 class Student(models.Model):
@@ -188,10 +188,13 @@ class Student(models.Model):
     image = models.ImageField(upload_to='students/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     def __str__(self):
-        return f"{self.user.get_full_name()} - {self.group}"
-    
+        full = self.user.get_full_name()
+        if full.strip():
+            return full
+        return self.user.username or f"Student #{self.id}"
+
     class Meta:
         ordering = ['-created_at']
 
