@@ -1,17 +1,25 @@
 from rest_framework import viewsets, status, permissions, request
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
+# from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, get_user_model
 from django.db.models import Q, Count, Avg
 from django.utils import timezone
 from .models import (
-    EducationalCenter, UserProfile, Branch, Subject, Group, Student,
+    EducationalCenter, User,UserProfile, Branch, Subject, Group, Student,
     Teacher, Lesson, Attendance, Payment, Assignment, AssignmentSubmission,
     Exam, ExamResult, Room, Payroll, Notification, Contract, Lead
 )
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status, permissions
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import RefreshToken
+from .serializers import LoginSerializer
+
 from .serializers import (
     UserSerializer, UserProfileSerializer, EducationalCenterSerializer,
     BranchSerializer, SubjectSerializer, GroupSerializer, StudentSerializer,
@@ -21,9 +29,24 @@ from .serializers import (
     ContractSerializer, LeadSerializer, LoginSerializer, DirectorCreateSerializer
 )
 
+# Foydalanuvchi modelini olish
+User = get_user_model()  # Bu 'crm_app.User' ni qaytaradi
+
+
+# YOKI: from .models import User  # Bu ham ishlaydi
+
+# ===== VIEWSET =====
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
+    queryset = User.objects.all()  # ✅ Endi ishlaydi
     serializer_class = UserSerializer
+    permission_classes = [permissions.AllowAny]
+
+    # Ixtiyoriy: filtr qo'shish
+    def get_queryset(self):
+        # Masalan, bloklangan foydalanuvchilarni ko'rsatmaslik
+        return User.objects.filter(is_blocked=False)
+
+
 
 # SUPERADMIN VIEWS
 class EducationalCenterViewSet(viewsets.ModelViewSet):
@@ -86,36 +109,12 @@ class DirectorViewSet(viewsets.ModelViewSet):
 #         serializer.save(role='Director')
 
 
-class LoginViewSet(viewsets.ViewSet):
-    """
-    Login API for all users.
+# views.py
 
-    Authentication: AllowAny
-
-    ENDPOINT:
-    - POST /api/login/ - User login with JWT token
-
-    Request:
-    {
-        "username": "director1",
-        "password": "password123"
-    }
-
-    Response:
-    {
-        "token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-        "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-        "user_id": 1,
-        "username": "director1",
-        "role": "Director",
-        "center_id": 1
-    }
-    """
+class LoginAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @action(detail=False, methods=['post'])
-    def login(self, request):
-        """User login endpoint"""
+    def post(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -130,9 +129,7 @@ class LoginViewSet(viewsets.ViewSet):
         refresh = RefreshToken.for_user(user)
         profile = UserProfile.objects.get(user=user)
 
-        center_id = None
-        if profile.educational_center:
-            center_id = profile.educational_center.id
+        center_id = profile.educational_center.id if profile.educational_center else None
 
         return Response({
             'token': str(refresh.access_token),

@@ -1,11 +1,11 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    EducationalCenterViewSet, DirectorViewSet, LoginViewSet,
+    EducationalCenterViewSet, DirectorViewSet,
     BranchViewSet, SubjectViewSet, GroupViewSet, StudentViewSet, TeacherViewSet,
     LessonViewSet, AttendanceViewSet, PaymentViewSet, AssignmentViewSet,
     AssignmentSubmissionViewSet, ExamViewSet, ExamResultViewSet, RoomViewSet,
-    PayrollViewSet, NotificationViewSet, ContractViewSet, LeadViewSet, UserViewSet
+    PayrollViewSet, NotificationViewSet, ContractViewSet, LeadViewSet, UserViewSet, LoginAPIView
 )
 
 router = DefaultRouter()
@@ -15,7 +15,7 @@ router.register(r'centers', EducationalCenterViewSet, basename='center')
 router.register(r'directors', DirectorViewSet, basename='director')
 
 # Authentication
-router.register(r'auth', LoginViewSet, basename='auth')
+# router.register(r'auth', LoginAPIView, basename='auth')
 router.register('users', UserViewSet, basename='users')
 # Director/Manager Endpoints
 router.register(r'branches', BranchViewSet, basename='branch')
@@ -39,7 +39,7 @@ router.register(r'payments', PaymentViewSet, basename='payment')
 router.register(r'payroll', PayrollViewSet, basename='payroll')
 
 # Operations
-router.register(r'roo   ms', RoomViewSet, basename='room')
+router.register(r'rooms', RoomViewSet, basename='room')
 router.register(r'contracts', ContractViewSet, basename='contract')
 router.register(r'leads', LeadViewSet, basename='lead')
 
@@ -48,5 +48,5 @@ router.register(r'notifications', NotificationViewSet, basename='notification')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('login/', LoginViewSet.as_view({'post': 'login'}), name='login'),
+    path('login/', LoginAPIView.as_view(), name='login'),
 ]

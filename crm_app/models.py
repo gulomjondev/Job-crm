@@ -1,7 +1,13 @@
 from django.db import models
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from datetime import datetime, timedelta
+
+from django.contrib.auth.models import AbstractUser
+
+from crm_project import settings
+
+
 
 class EducationalCenter(models.Model):
     """Main educational center model"""
@@ -20,7 +26,11 @@ class EducationalCenter(models.Model):
     opened_at = models.DateField(default=datetime.now)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Active')
     website = models.URLField(blank=True)
-    director = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='directed_centers', blank=True)
+    director = models.ForeignKey(
+        settings.AUTH_USER_MODEL,  # Bu sizning maxsus modelingizga ishora qiladi
+        on_delete=models.CASCADE,
+        related_name='directed_centers'  # Ixtiyoriy, lekin yaxshi
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -30,6 +40,38 @@ class EducationalCenter(models.Model):
     
     def __str__(self):
         return self.name
+
+
+class User(AbstractUser):
+    ROLE_CHOICES = (
+        ('superadmin', 'Super Admin'),
+        ('admin', 'Admin'),
+        ('teacher', 'Teacher'),
+        ('student', 'Student'),
+        ('staff', 'Staff'),
+    )
+
+    # Qo‘shimcha maydonlar
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    passport_number = models.CharField(max_length=20, blank=True, null=True)
+    birthday = models.DateField(blank=True, null=True)
+    address = models.CharField(max_length=255, blank=True, null=True)
+    specialty = models.CharField(max_length=255, blank=True, null=True)
+    image = models.ImageField(upload_to="users/", blank=True, null=True)
+    is_blocked = models.BooleanField(default=False)
+    educational_center = models.ForeignKey(
+        EducationalCenter,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="center_users"
+    )
+
+    REQUIRED_FIELDS = ['email']
+
+    def __str__(self):
+        return f"{self.username} ({self.role})"
 
 
 class UserProfile(models.Model):
@@ -45,8 +87,13 @@ class UserProfile(models.Model):
     
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
-    educational_center = models.ForeignKey(EducationalCenter, on_delete=models.CASCADE, 
-                                          related_name='users', null=True, blank=True)
+    educational_center = models.ForeignKey(
+        EducationalCenter,
+        on_delete=models.CASCADE,
+        related_name='profiles',
+        null=True,
+        blank=True
+    )
     phone = models.CharField(max_length=20, blank=True)
     passport_number = models.CharField(max_length=20, blank=True, null=True)
     birthday = models.DateField(null=True, blank=True)
@@ -125,7 +172,7 @@ class Teacher(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.get_full_name()} - {self.specialization}"
+        return f"{self.user.username}"
 
     class Meta:
         ordering = ['-created_at']

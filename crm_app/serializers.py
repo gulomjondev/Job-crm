@@ -1,33 +1,54 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 from .models import (
     EducationalCenter, UserProfile, Branch, Subject, Group, Student, 
     Teacher, Lesson, Attendance, Payment, Assignment, AssignmentSubmission,
     Exam, ExamResult, Room, Payroll, Notification, Contract, Lead
 )
 
+from rest_framework import serializers
+from .models import User
+from django.contrib.auth.hashers import make_password
 
-class UserSerializer(serializers.ModelSerializer):
-    """Basic user serializer"""
+
+class UserCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'password')
+        fields = [
+            'id', 'username', 'password', 'role',
+            'passport_number', 'birthday', 'address',
+            'specialty', 'phone', 'educational_center'
+        ]
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+
+    def validate_password(self, value):
+        return make_password(value)
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            'id', 'username', 'email', 'first_name', 'last_name',
+            'role', 'phone', 'passport_number', 'birthday',
+            'address', 'specialty', 'image', 'is_blocked',
+            'educational_center'
+        )
         extra_kwargs = {'password': {'write_only': True}}
-    
-    def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
-        return user
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
     """User profile serializer with user details"""
     user = UserSerializer(read_only=True)
     user_id = serializers.IntegerField(write_only=True, required=False)
-    
+
     class Meta:
         model = UserProfile
-        fields = ('id', 'user', 'user_id', 'role', 'educational_center', 'phone', 
-                 'passport_number', 'birthday', 'image', 'is_blocked', 'created_at')
+        fields = ('id', 'user', 'user_id', 'role', 'educational_center', 'phone',
+                 'passport_number', 'birthday', 'image', 'is_blocked', 'created_at','role', 'educational_center', 'phone', 'passport_number',
+                  'birthday', 'address', 'specialty', 'image', 'is_blocked')
         read_only_fields = ('created_at',)
 
 class DirectorCreateSerializer(serializers.ModelSerializer):
@@ -71,30 +92,39 @@ class DirectorListSerializer(serializers.ModelSerializer):
 
 
 class EducationalCenterSerializer(serializers.ModelSerializer):
-    """Educational center serializer"""
     director_name = serializers.CharField(source='director.get_full_name', read_only=True)
     director_username = serializers.CharField(source='director.username', read_only=True)
     users_count = serializers.SerializerMethodField()
     available_directors = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = EducationalCenter
-        fields = ('id', 'name', 'address', 'phone', 'email', 'logo', 'description',
-                 'license_number', 'opened_at', 'status', 'website', 'director',
-                 'director_name', 'director_username', 'users_count', 'available_directors',
-                 'created_at', 'updated_at')
+        fields = (
+            'id', 'name', 'address', 'phone', 'email', 'logo', 'description',
+            'license_number', 'opened_at', 'status', 'website', 'director',
+            'director_name', 'director_username', 'users_count',
+            'available_directors', 'created_at', 'updated_at'
+        )
         read_only_fields = ('created_at', 'updated_at', 'available_directors')
         extra_kwargs = {
             'director': {'required': False, 'allow_null': True}
         }
-    
+
     def get_users_count(self, obj):
-        return obj.users.count()
-    
+        return obj.center_users.count()
+
+    def get_students_count(self, obj):
+        return obj.center_users.filter(role='student').count()
+
+    def get_teachers_count(self, obj):
+        return obj.center_users.filter(role='teacher').count()
+
+    def get_admins_count(self, obj):
+        return obj.center_users.filter(role='admin').count()
+
     def get_available_directors(self, obj):
-        """Get list of available directors (those without an educational center)"""
         directors = UserProfile.objects.filter(
-            role='Director', 
+            role='Director',
             educational_center__isnull=True
         )
         return DirectorListSerializer(directors, many=True).data

@@ -12,6 +12,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -25,8 +27,12 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'corsheaders',
     'crm_app',
-    # 'gunicorn',
+    'gunicorn',
 ]
+
+AUTH_USER_MODEL = "crm_app.User"
+
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -61,13 +67,15 @@ TEMPLATES = [
 WSGI_APPLICATION = 'crm_project.wsgi.application'
 
 DATABASES = {
-    "default": dj_database_url.config(
-        default=os.environ.get("DATABASE_URL"),
-        conn_max_age=600,
-        ssl_require=False
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'job-crm_db',
+        'USER': 'postgres',
+        'PASSWORD': 'gulomjon2003',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
 }
-
 
 
 AUTH_PASSWORD_VALIDATORS = [
