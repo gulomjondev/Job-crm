@@ -1,6 +1,6 @@
 from rest_framework import viewsets, status, permissions, request
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -73,7 +73,10 @@ class EducationalCenterViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
 
     def perform_create(self, serializer):
-        serializer.save()
+        if self.request.user.is_authenticated:
+            serializer.save(director=self.request.user)
+        else:
+            raise PermissionDenied("Authentication required to create center")
 
     @action(detail=True, methods=['post'])
     def activate(self, request, pk=None):

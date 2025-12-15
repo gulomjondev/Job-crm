@@ -49,6 +49,8 @@ class User(AbstractUser):
         ('teacher', 'Teacher'),
         ('student', 'Student'),
         ('staff', 'Staff'),
+        ('director', 'Director'),
+        ('manager','Manager'),
     )
 
     # Qo‘shimcha maydonlar
